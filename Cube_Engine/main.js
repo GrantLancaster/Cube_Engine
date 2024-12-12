@@ -83,19 +83,12 @@ const PlaneGeometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
 				objColor: string; --> STRING THAT IS A COLOR (THINK CSS COLOR STRINGS).
 ) */
 // SEE BELLOW FOR AN EXAMPLE OF A PLANE MESH USING THE MATERIAL GENERATION FUNCTION.
-const PlaneMesh = new THREE.Mesh(PlaneGeometry, createMat(true, 5, "white", "white"));
+const PlaneMesh = new THREE.Mesh(PlaneGeometry, createMat(true, 2, "white", "white"));
 /*-----------------------------------------*/
 
 
 let impossibleCube, block, planet;
-let whichPlane = "none";
-let toggleString;
-let sizing = false;
-const dif = 0.1;
-const buffDist = 0.05
-let direction = 1;
-let factor = 1;
-let currentArrow;
+let frontFaceObjects = [];
 
 /*------------ Controls -------------*/
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -115,10 +108,8 @@ function setup() {
 	// Using the PlaneMesh from above:
   scene.add(PlaneMesh);
 
-	// Scale it up to double the size on the x and y axis (axis relative to the plane):
-	PlaneMesh.scale(2,2);
-	// Move the plane 1 on the x-axis, 1 on the y-axis, a 3 on the z-axis (axis relative to the scene):
-	PlaneMesh.position.set(1,1,3);
+	// Move the plane 0 on the x-axis, 0 on the y-axis, a 3 on the z-axis (axis relative to the scene):
+	PlaneMesh.position.set(0,0,3);
   
 
 	// IF YOU ARE WANTING TO LOAD CUSTOM MODELS, CALL YOUR BUILD FUNCTION HERE.
@@ -174,7 +165,7 @@ async function build_with_custom_models() {
 	impossibleCube.scale.set(2,2,2);
 
 	// Wait for all faces of the cube to render, before moving on the next part of the program.
-	await Promise.all([loadFrontFace(), loadLeftFace(), loadRightFace(), loadBackFace(), loadTopFace(), loadBottomFace()]);
+	await Promise.all([loadFrontFace()]);
 	
   // Start the render loop after everything has loaded.
 	render();
@@ -183,11 +174,6 @@ async function build_with_custom_models() {
 function render() {
 	renderer.render(scene, camera);
 	animateFrontFace();
-	animateBackFace();
-	animateLeftFace();
-	animateRightFace();
-	animateTopFace();
-	animateBottomFace();
 
 	requestAnimationFrame(render);
 };
@@ -220,183 +206,18 @@ async function loadModel(path, needStencil, refNum) {
 };
 
 async function loadFrontFace() {
-	block = await loadModel("models/filledCube.gltf", true, 2);
+	block = await loadModel("models/triangle.gltf", true, 2);
 	scene.add(block);
-	for (let j = 0; j < 3; j++) {
-		if (j == 0) {
-			for (let i = 0; i < 10; i++) {
-				const lip = await loadModel("models/ring.gltf", true, 2);
-				scene.add(lip);
-				lip.scale.set(0+i, 0+i, 0+i);
-				lip.rotation.z = Math.PI/2;
-				lip.position.x = (-i/3)*i;
-				rings.push(lip);
-			}
-		} else if (j == 1) {
-			for (let i = 0; i < 10; i++) {
-				const lip = await loadModel("models/ring.gltf", true, 2);
-				scene.add(lip);
-				lip.scale.set(0+i, 0+i, 0+i);
-				lip.rotation.z = -Math.PI/2;
-				lip.position.x = (i/3)*i;
-				rings.push(lip);
-			}
-		} else {
-			for (let i = 0; i < 10; i++) {
-				const lip = await loadModel("models/ring.gltf", true, 2);
-				scene.add(lip);
-				lip.scale.set(2+i, 2+i, 2+i);
-				lip.rotation.x = Math.PI/2;
-				lip.position.z = (-i/3)*i;
-				rings.push(lip);
-			}
-		}
-	}
+	frontFaceObjects.push(block);
+
 }
 
 function animateFrontFace() {
 	let x = 0;
-	for (let item = 0; item < rings.length; item++) {
-		rings[item].rotateX(0.01+x), rings[item].rotateY(-0.01+x);
+	for (let item = 0; item < frontFaceObjects.length; item++) {
+		frontFaceObjects[item].rotateX(0.01+x), frontFaceObjects[item].rotateY(-0.01+x);
 		x = x + 0.001;
 	}
-};
-
-async function loadBackFace() {
-	for (let i = 0; i < 20; i++) {
-		const frame = await loadModel("models/triangle.gltf", true, 5);
-		frame.scale.set(6-i/4, 6-i/4, 1);
-		frame.position.set(0, 0, -2.5);
-		scene.add(frame);
-		triangles.push(frame);
-	}
-};
-function animateBackFace() {
-	for (let i = 0; i < triangles.length; i++) {
-		triangles[i].position.z += i /300 * direction;
-		triangles[i].rotation.z += i/1000 * direction;
-		if(triangles[triangles.length-1].position.z > 25) {
-			direction = -4;
-		} else if(triangles[triangles.length-1].position.z < -8.5) {
-			direction = 1;
-		}	
-	}
-};
-
-async function loadLeftFace() {
-	for (let i = 0; i < 5; i++) {
-		for (let j = 0; j < 5; j++) {
-			const block = await loadModel("models/filledCube.gltf", true, 3);
-			block.position.set((i)-1.5, -1, -2 + j);
-			blocks.push(block);
-			scene.add(block);
-		}
-	}
-};
-function animateLeftFace() {
-	let int = Math.floor(Math.random()*4);
-	let factor = Math.floor(Math.random() *10) / 3;
-	let index = Math.floor(Math.random() *25);
-	if (int % 2 != 0) {
-		blocks[index].position.y = int * (-1);
-		blocks[index].scale.set(factor, factor, factor);
-	} else {
-		blocks[index].position.y = int;
-	}	
-};
-
-async function loadRightFace() {
-	for (let i = 0; i < 3; i++) {
-		for (let j = 0; j < 4; j++) {
-			const bar = await loadModel("models/test.gltf", true, 4);
-			bars[i].push(bar);
-			scene.add(bar);
-		}
-	}
-};
-function animateRightFace() {
-	for (let i = 0; i < bars.length; i++) {
-		for (let j = 0; j < bars[i].length; j++) {
-			let factor
-			let inverse = Math.floor(Math.random()*4);
-			if (inverse % 2 == 0) {factor = -1}
-			else {factor = 1}
-			let randX = Math.floor(Math.random()*3*factor);
-			let randY = Math.floor(Math.random()*3*factor);
-			let randZ = Math.floor(Math.random()*3*factor);
-			let randDist = Math.floor(Math.random()*15)+10;
-			let speed = Math.floor(Math.random()*10)/20;
-			bars[i][j].scale.set(1, 1, 10);
-			if (i == 0) {
-				if (bars[i][j].position.z >= randDist) {
-					bars[i][j].position.set(randX, randY, -randDist);
-				} else {
-					bars[i][j].translateZ(speed);
-				}
-			}else if (i == 1) {
-				bars[i][j].rotation.x = Math.PI/2;
-				if (bars[i][j].position.y >= randDist) {
-					bars[i][j].position.set(randX, -randDist, randZ);
-				} else {
-					bars[i][j].translateZ(-speed);
-				}
-			}else if (i == 2) {
-				bars[i][j].rotation.y = Math.PI/2;
-				if (bars[i][j].position.x <= -randDist) {
-					bars[i][j].position.set(randDist, randY, randZ);
-				} else {
-					bars[i][j].translateZ(-speed);
-				}
-			}
-		}
-	}
-};
-
-async function loadTopFace() {
-	const diamond = await loadModel("models/diamond.gltf", true, 6);
-	for (let i = 0; i < 8; i++) {
-		const hexagon = await loadModel("models/hexagon.gltf", true, 6);
-		hexagon.scale.set(5, 5, 5);
-		hexagons.push(hexagon);
-		diamond.add(hexagon);
-	}
-	diamond.scale.set(2, 2, 2);
-	diamonds.push(diamond);
-	scene.add(diamond);
-};
-function animateTopFace() {
-	const distance = Math.sin((diamonds[0].rotation.y*50)*Math.PI/180);
-	diamonds[0].rotation.x += 0.01;
-	diamonds[0].rotation.y -= 0.01;
-	//console.log(distance);
-	for (let i = 0; i < hexagons.length; i++) {
-		if (i % 2 == 0) {factor = -1}
-		else if (i % 2 !== 0) {factor = 1};
-		hexagons[i].scale.set(2-(i*0.25), 2-(i*0.25), 2-(i*0.25));
-		hexagons[i].position.set(0, 0, distance*i*2*factor);
-		hexagons[i].rotation.set(-diamonds[0].rotation.x, 0, 0);
-	}
-
-};
-
-async function loadBottomFace() {
-	planet = await loadModel("models/lilPineTreePlanet.gltf", true, 7);
-	planet.scale.set(2,2,2);
-
-	planet.children[1].children[0].material.stencilWrite = true;
-	planet.children[1].children[0].material.stencilRef = 7;
-	planet.children[1].children[0].material.stencilFunc = THREE.EqualStencilFunc;
-
-	planet.children[1].children[1].material.stencilWrite = true;
-	planet.children[1].children[1].material.stencilRef = 7;
-	planet.children[1].children[1].material.stencilFunc = THREE.EqualStencilFunc;
-
-	scene.add(planet);
-};
-function animateBottomFace() {
-	planet.rotation.x += 0.005;
-	planet.rotation.z += 0.005;
-	planet.rotation.y -= 0.005;
 };
 
 setup();
